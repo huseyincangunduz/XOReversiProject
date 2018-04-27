@@ -2,6 +2,9 @@
 #include<stdio.h>
 #include<ctype.h>
 #include<string.h>
+
+//SOURCE @ https://github.com/huseyincangunduz/XOReversiProject
+
 static char playground[8][8];
 int avaible_moves[24][2];
 char x_ = 'x', o_ = 'o', player1 = 'x', player2 = 'o';
