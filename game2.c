@@ -2,8 +2,14 @@
 #include<stdio.h>
 #include<ctype.h>
 #include<string.h>
+//#include<W,n>
 static char playground[8][8];
-int avaible_moves[24][2];
+int avaible_moves[24][3];
+
+void colofrullPrint(char* str)
+{
+	printf("%c[1;31m%s\n",str, 27); // red
+}
 
 int MoveRotations[8][2] = {
 	{ 1,0 },
@@ -50,6 +56,8 @@ int getRowInt(char row)
 	return 0;
 }
 
+
+
 void printgame()
 {
 	int i = 0;
@@ -65,12 +73,27 @@ void printgame()
 			printf("\n%c ", row + i / 8);
 		}
 		amblem = *(ply_ptr + i);
-
-		if (MoveablePoint(i / 8, i % 8))
+		if (empty(amblem))
 		{
-			amblem = '-';
+			int willBeReverse = MoveablePoint(i / 8, i % 8);
+
+			if (willBeReverse>9)
+			{
+
+				amblem = '+';
+			}
+			else if (0 < willBeReverse && willBeReverse<9)
+			{
+
+				amblem = 48 + willBeReverse;
+
+			}
 		}
+
+		
+			
 		printf(":%c", amblem);
+		
 		if (i % 8 == 7) printf(":");
 
 	}
@@ -105,7 +128,7 @@ int MoveablePoint(int row, int col)
 	{
 		if (avaible_moves[i][0] == row && avaible_moves[i][1] == col)
 		{
-			return 1;
+			return avaible_moves[i][2];
 		}
 	}
 	return 0;
@@ -193,13 +216,13 @@ void Reverse(char playground[][8], char side, int row, int col,int  CheckThePoin
 int test_move(char ply[][8], char side, int row, int col, int deltarow, int deltacol, int deeptest)
 {
 
-	
+	char c = getFromPlayground(row, col);
 	int testrow = row + deltarow, 
 		testcol = col + deltacol, 
 		avaibleRock = 0;
 
 	
-	while (0 <= testcol < 8 && 0 <= testrow < 8)
+	while (0 <= testcol < 8 && 0 <= testrow < 8 && empty(c))
 	{
 		char current = getFromPlayground(testrow,testcol);
 		int invalidrun = 
@@ -217,7 +240,7 @@ int test_move(char ply[][8], char side, int row, int col, int deltarow, int delt
 			break;
 		}
 		avaibleRock += 1;
-		if (deeptest) avaibleRock += (side, testrow, testcol,1);
+		if (deeptest) avaibleRock += TestPoint(side, testrow, testcol,1);
 		
 		testcol += deltacol;
 		testrow += deltarow;
@@ -261,6 +284,7 @@ int TestPoint(char side, int row, int col, int deepTest)
 		int deltacol = MoveRotations[i][1];
 
 		a += test_move(playground, side, row, col, deltarow, deltacol, deepTest);
+		if (a > 0) return a;
 	}
 	return a;
 }
@@ -271,11 +295,9 @@ int findValidMoves(char ply[][8], char side)
 	//for (i < )
 	//printf("\n%c",side);
 	int row = 0, col = 0, avaible = 0;
+	int a = 0;
 	for (row = 0; row < 8; row++)
 	{
-
-
-
 		for (col = 0; col < 8; col++)
 		{
 			/*if (ply[row][col] == 'x')
@@ -284,16 +306,19 @@ int findValidMoves(char ply[][8], char side)
 			}*/
 			if (empty(getFromPlayground(row, col)))
 			{
-				avaible = TestPoint(side, row, col, 0);
-			}
+				avaible = TestPoint(side, row, col, 1);
+			
 			//avaible = testAll(side, row, col);
 
-			if (avaible > 0)
-			{
+				if (avaible > 0)
+				{
 				//printf("avaible > 0");
-				avaible_moves[i][0] = row;
-				avaible_moves[i][1] = col;
-				i++;
+					avaible_moves[i][0] = row;
+					avaible_moves[i][1] = col;
+					avaible_moves[i][2] = avaible;
+					i++;
+					a = 1;
+				}
 			}
 		}
 	}
@@ -302,7 +327,7 @@ int findValidMoves(char ply[][8], char side)
 		avaible_moves[i][0] = -1;
 		avaible_moves[i][1] = -1;
 	}
-	return 1;
+	return a;
 }
 
 
@@ -359,8 +384,6 @@ void ComputerMove(char PlayerSide)
 			row = trow;
 			col = tcol;
 		}
-
-
 	}
 	Reverse(playground, PlayerSide, row, col, 1);
 }
@@ -374,7 +397,7 @@ int main()
 
 	while (!exit_)
 	{
-		while (PlayMode != 'c' && PlayMode != 'm')
+		while (PlayMode != 'c' && PlayMode != 'm' && PlayMode != 'x')
 		{
 			printf("Bilgisayara karþý oynamak için 'c',\n Ýki kiþiyle oynamak için 'm' yazýnýz\nYardým için ise 'h' yazabilirsiniz.");
 			PlayMode = tolower(getchar());
@@ -398,17 +421,19 @@ int main()
 			
 			if (currentplayer == player1 ) {
 				if (x_hak) {
-					PlayerMove(currentplayer);
+					if (PlayMode == 'x')
+					{
+						ComputerMove(currentplayer);
+					}
+					else
+						PlayerMove(currentplayer);
 				}
-			else 
-			{ 
+				else 
+				{ 
 				printf("%d: Hamle yapamazsýnýz... Ýkinci oyuncuya geçiliyor", currentplayer);
+				}
 			}
-			}
-
-			
-
-			if (currentplayer == player2)
+			else if (currentplayer == player2)
 			{
 				if (o_hak)
 				{
@@ -430,21 +455,32 @@ int main()
 			
 			currentplayer = reversedChar(currentplayer);
 
-			gameOver == (x_hak == 0 && o_hak == 0);
+			gameOver = (x_hak == 0 && o_hak == 0);
 		}
 		printf("\n OYUN BÝTTÝ \n");
 		printscors();
 		if (x_point > o_point)
 		{
-			printf("Kazanan: x");
+			printf("\nKazanan: x");
 		}
 		else if(x_point < o_point)
 		{
-			printf("Kazanan: o");
+			printf("\nKazanan: o");
 		}
 		else if (x_point == o_point)
 		{
-			printf("Kazanan: Berabere");
+			printf("\nKazanan: Berabere");
+		}
+		printf("\nÇýkmak için esc'ye, tekrar oynamak için enter'a basýn");
+		char x = getch();
+		if (x == '\e')
+		{
+			exit_ = 1;
+		}
+		else if (x == '\n')
+		{
+			gameOver = 0;
+			FillForNewGame(playground);
 		}
 	}
 
@@ -452,3 +488,4 @@ int main()
 	system("pause");
 	return 0;
 }
+
